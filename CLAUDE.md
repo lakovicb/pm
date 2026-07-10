@@ -46,6 +46,16 @@ pytest -k "test_name"            # Single test by name
 PM_BASE_URL=http://localhost:8000 pytest tests/test_integration.py  # Integration tests against running server
 ```
 
+### Live integration/E2E testing against a running container
+```bash
+docker build -t pm-app .
+docker rm -f pm-app || true
+docker run -d --name pm-app --env-file .env -p 8000:8000 pm-app
+curl -sf http://127.0.0.1:8000/health   # wait for readiness
+PM_BASE_URL=http://127.0.0.1:8000 PYTHONPATH=$(pwd) pytest backend
+npm run test:all --prefix frontend      # Playwright runs against the backend-served app on :8000
+```
+
 ## Architecture
 
 **Frontend (`frontend/src/`):**
@@ -55,13 +65,20 @@ PM_BASE_URL=http://localhost:8000 pytest tests/test_integration.py  # Integratio
 - `lib/api.ts` - API client functions
 - `lib/kanban.ts` - Data types (Card, Column, BoardData) and utilities
 
-**Backend (`backend/app/main.py`):**
-- Single file containing all routes, database setup, and AI integration
-- SQLite tables: users, boards, columns, cards
-- Key routes: `/api/board` (GET), `/api/columns/{id}` (CRUD), `/api/cards/{id}` (CRUD), `/api/chat` (AI)
-- Frontend static files served from `/` in production
+**Backend (`backend/app/`):**
+- `main.py` - FastAPI app, lifespan, route registration
+- `config.py` - Environment config, constants, seed data
+- `models.py` - Pydantic request/response models
+- `database.py` - DB connection, init, queries (SQLite tables: users, boards, columns, cards)
+- `ai.py` - OpenRouter integration and structured-output action application
+- `dependencies.py` - FastAPI dependencies (`get_db`, `get_username`)
+- `routes/board.py` - Board/column/card CRUD (`/api/board`, `/api/columns/{id}`, `/api/cards/{id}`)
+- `routes/chat.py` - AI chat endpoint (`/api/chat`)
+- `routes/static.py` - Serves built frontend static files from `/` in production
 
 **ID Prefixing:** Frontend prefixes IDs with `col-` and `card-` for drag-and-drop stability, strips them for API calls.
+
+**Auth:** No real auth — `get_username` dependency resolves the hardcoded MVP user; all board/column/card queries are scoped to that user's single board.
 
 ## Color Scheme
 - Accent Yellow: `#ecad0a`
