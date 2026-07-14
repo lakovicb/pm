@@ -243,16 +243,17 @@ export const KanbanBoard = ({
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
-            <section className="grid gap-6 lg:grid-cols-5">
+            <section className="board-scroll flex flex-col gap-6 md:flex-row md:gap-6 md:overflow-x-auto md:pb-3">
               {board.columns.map((column) => (
-                <KanbanColumn
-                  key={column.id}
-                  column={column}
-                  cards={column.cardIds.map((cardId) => board.cards[cardId])}
-                  onRename={handleRenameColumn}
-                  onAddCard={handleAddCard}
-                  onDeleteCard={handleDeleteCard}
-                />
+                <div key={column.id} className="md:flex md:min-w-[260px] md:flex-1">
+                  <KanbanColumn
+                    column={column}
+                    cards={column.cardIds.map((cardId) => board.cards[cardId])}
+                    onRename={handleRenameColumn}
+                    onAddCard={handleAddCard}
+                    onDeleteCard={handleDeleteCard}
+                  />
+                </div>
               ))}
             </section>
             <DragOverlay>
